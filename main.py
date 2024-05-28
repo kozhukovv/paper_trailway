@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 # from pycore.arcspline import Arcspline
 from arcspline import Arcspline
@@ -14,11 +16,20 @@ import math
 # /home/kozhukovv/paper/cv_book/data/asspline24_second02.tsv
 FIRST = "./data/asspline24_second02.tsv"
 SECOND = "./data/asspline24i_aa.tsv"
+SPLINE_DIR = "./data/trm_depo/splines"
+# SPLINE_DIR = "./data"
+REF = "./data/trm_depo/get.163.182.left/predicted/8.png"
 
 
 if __name__ == '__main__':
     # зачитываем сплайн
-    data = pd.read_csv(FIRST, skiprows=[1], sep='\t')
+    li = []
+    for f in os.listdir(SPLINE_DIR):
+        if f.endswith('tsv'):
+            li.append(pd.read_csv(os.path.join(SPLINE_DIR, f), skiprows=[1], sep='\t'))
+    # print(li)
+    data = pd.concat(li, axis=0, ignore_index=True)
+    # data = pd.read_csv(FIRST, skiprows=[1], sep='\t')
     print(data.shape)
     arc = Arcspline(data)
     arc.build()
@@ -28,6 +39,7 @@ if __name__ == '__main__':
 
     # зачитываем камеру 
     par = ['K', 'D', 'r', 't']
+    # calib_reader = CalibReader('./data/calib_paper/leftImage.yml', param = par)
     calib_reader = CalibReader('./data/calib_paper/leftImage.yml', param = par)
     calib_dict = calib_reader.read()
     calib = Calib(calib_dict)
@@ -54,8 +66,9 @@ if __name__ == '__main__':
 
     # определяем реальную ориентацию
     imsize = [600, 960, 3]
+    # imsize = [1200, 1920, 3]
 
-    for alpha in np.linspace(0, 360, 360):
+    for alpha in range(361):
         image = np.zeros(imsize)
         # для каждого alpha производим перерасчет координат
         r = np.array([
@@ -72,15 +85,20 @@ if __name__ == '__main__':
         for (x, y) in zip(x_vr_new, y_vr_new):
             pix = camera.project_point_3d_to_2d(Point((x, y, 0)))
             if pix[0] < 0 and pix[0] >= imsize[1] and pix[1] < 0 and pix[1] >= imsize[0]:
-                continue
+            # if pix[0] < 0 or pix[0] >= imsize[1] or pix[1] < 0 or pix[1] >= imsize[0]:
+                    continue
             count_of_dots += 1
             cv2.circle(image, pix, 2, [255, 255, 255], 2, cv2.LINE_AA)
         print(f"Angle: {alpha} \t Count of dots: {count_of_dots}")
         cv2.putText(image, f"alpha = {alpha}", [200, 100], cv2.FONT_HERSHEY_SIMPLEX, 1, [0, 255, 255], 2, cv2.LINE_AA)
         cv2.putText(image, f"Count of dots: {count_of_dots}", [200, 200], cv2.FONT_HERSHEY_SIMPLEX, 1, [0, 255, 255], 2, cv2.LINE_AA)
         # print(image.max())
-        cv2.imshow("Image", image)
-        
+        # cv2.imshow("Image", image)
+        crop_img = image[280-70:, 448-70:]
+        print(crop_img.shape)
+        cv2.imshow("Image", crop_img)
+        # cv2.imshow("Image", cv2.resize(image, (512, 320)))
+
         cv2.imwrite(f"./results/image_{alpha}.png", image)
         cv2.waitKey(10)
     cv2.destroyAllWindows()
