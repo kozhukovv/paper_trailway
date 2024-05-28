@@ -14,6 +14,8 @@ import math
 # /home/kozhukovv/paper/cv_book/data/asspline24_second02.tsv
 FIRST = "./data/asspline24_second02.tsv"
 SECOND = "./data/asspline24i_aa.tsv"
+
+
 if __name__ == '__main__':
     # зачитываем сплайн
     data = pd.read_csv(FIRST, skiprows=[1], sep='\t')
